@@ -5,10 +5,11 @@ import SwiftData
 @Model
 final class SymptomLog {
     var date: Date = Date()
-    /// 0–10
+    /// 0–5
     var bloating: Int = 0
-    var gasRaw: Int = 0
-    /// 0–10
+    /// 0–5
+    var gas: Int = 0
+    /// 0–5
     var pain: Int = 0
     var stoolRaw: Int = 0
     var onsetRaw: Int = 0
@@ -20,7 +21,7 @@ final class SymptomLog {
     init(
         date: Date,
         bloating: Int,
-        gas: GasLevel,
+        gas: Int,
         pain: Int,
         stool: BristolType,
         onset: OnsetTime,
@@ -29,7 +30,7 @@ final class SymptomLog {
     ) {
         self.date = date
         self.bloating = bloating
-        self.gasRaw = gas.rawValue
+        self.gas = gas
         self.pain = pain
         self.stoolRaw = stool.rawValue
         self.onsetRaw = onset.rawValue
@@ -37,13 +38,12 @@ final class SymptomLog {
         self.notes = notes
     }
 
-    var gas: GasLevel { GasLevel(rawValue: gasRaw) ?? .absent }
     var stool: BristolType { BristolType(rawValue: stoolRaw) ?? .notRecorded }
     var onset: OnsetTime { OnsetTime(rawValue: onsetRaw) ?? .unknown }
 
-    /// Worst of bloating, pain and gas on a 0–10 scale.
+    /// Worst of bloating, pain and gas.
     var severity: Double {
-        max(Double(bloating), Double(pain), gas.score)
+        Double(max(bloating, pain, gas))
     }
 }
 
@@ -51,7 +51,7 @@ final class SymptomLog {
 struct SymptomDraft {
     var date = Date()
     var bloating = 0
-    var gas: GasLevel = .absent
+    var gas = 0
     var pain = 0
     var stool: BristolType = .notRecorded
     var onset: OnsetTime = .unknown

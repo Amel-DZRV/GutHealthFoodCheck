@@ -11,6 +11,9 @@ final class FoodItem {
     var categoryRaw: String = "mixed"
     var notes: String = ""
     var createdAt: Date = Date()
+    /// Set from the reintroduction plan: "tolerated", "reaction" or empty.
+    var reintroResultRaw: String = ""
+    var reintroDetail: String = ""
 
     @Relationship(deleteRule: .cascade, inverse: \SymptomLog.food)
     var logs: [SymptomLog] = []
@@ -52,8 +55,13 @@ final class FoodItem {
         return Double(logs.map(\.bloating).reduce(0, +)) / Double(logs.count)
     }
 
+    /// A finished reintroduction test outranks ad-hoc logs.
     var tolerance: Tolerance {
-        Tolerance(averageSeverity: averageSeverity)
+        switch reintroResultRaw {
+        case "tolerated": .safe
+        case "reaction": .trigger
+        default: Tolerance(averageSeverity: averageSeverity)
+        }
     }
 
     // MARK: - Duplicate detection

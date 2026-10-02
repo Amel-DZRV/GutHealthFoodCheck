@@ -1,24 +1,8 @@
 import SwiftUI
 
-enum GasLevel: Int, CaseIterable, Identifiable {
-    case absent = 0
-    case mild
-    case moderate
-    case severe
-
-    var id: Int { rawValue }
-
-    var title: String {
-        switch self {
-        case .absent: "None"
-        case .mild: "Mild"
-        case .moderate: "Moderate"
-        case .severe: "Severe"
-        }
-    }
-
-    /// Gas mapped onto the same 0–10 scale as bloating and pain.
-    var score: Double { Double(rawValue) * 10 / 3 }
+/// All symptoms are rated 0 (none) to 5 (worst).
+enum SymptomScale {
+    static let range = 0...5
 }
 
 /// Bristol Stool Scale. Types 3–4 are considered normal.
@@ -78,8 +62,8 @@ enum Tolerance {
     init(averageSeverity: Double?) {
         switch averageSeverity {
         case nil: self = .untested
-        case let value? where value < 3.5: self = .safe
-        case let value? where value < 6.5: self = .caution
+        case let value? where value < 1.5: self = .safe
+        case let value? where value < 3: self = .caution
         default: self = .trigger
         }
     }
@@ -113,11 +97,11 @@ enum Tolerance {
 }
 
 extension Color {
-    /// Green → red for a 0–10 symptom score.
+    /// Green → red for a 0–5 symptom score.
     static func forScore(_ score: Double) -> Color {
         switch score {
-        case ..<3.5: .green
-        case ..<6.5: .orange
+        case ..<1.5: .green
+        case ..<3: .orange
         default: .red
         }
     }

@@ -15,6 +15,13 @@ struct FoodDetailView: View {
                 summary
             }
 
+            if !food.reintroDetail.isEmpty {
+                Section("Reintroduction") {
+                    Label(food.reintroDetail, systemImage: food.tolerance.systemImage)
+                        .foregroundStyle(food.tolerance.color)
+                }
+            }
+
             if !food.notes.isEmpty {
                 Section("Notes") {
                     Text(food.notes)
@@ -130,7 +137,7 @@ private struct LogRow: View {
             HStack(spacing: 6) {
                 Chip(text: "Bloating \(log.bloating)", color: .forScore(Double(log.bloating)))
                 Chip(text: "Pain \(log.pain)", color: .forScore(Double(log.pain)))
-                Chip(text: "Gas: \(log.gas.title)", color: .forScore(log.gas.score))
+                Chip(text: "Gas \(log.gas)", color: .forScore(Double(log.gas)))
                 if log.stool != .notRecorded {
                     Chip(text: log.stool.shortTitle, color: log.stool.isNormal ? .green : .orange)
                 }
@@ -150,7 +157,7 @@ private struct LogRow: View {
     }
 }
 
-private struct Chip: View {
+struct Chip: View {
     let text: String
     let color: Color
 

@@ -60,13 +60,9 @@ struct SymptomFields: View {
         }
 
         Section("Symptoms") {
-            ScoreSlider(title: "Bloating", value: $draft.bloating)
-            ScoreSlider(title: "Abdominal pain", value: $draft.pain)
-            Picker("Gas", selection: $draft.gas) {
-                ForEach(GasLevel.allCases) { level in
-                    Text(level.title).tag(level)
-                }
-            }
+            RatingPicker(title: "Bloating", value: $draft.bloating)
+            RatingPicker(title: "Gas", value: $draft.gas)
+            RatingPicker(title: "Abdominal pain", value: $draft.pain)
             Picker("Stool", selection: $draft.stool) {
                 ForEach(BristolType.allCases) { type in
                     Text(type.title).tag(type)
@@ -88,31 +84,29 @@ struct SymptomFields: View {
     }
 }
 
-private struct ScoreSlider: View {
+/// A 0–5 symptom rating as a segmented control.
+struct RatingPicker: View {
     let title: String
     @Binding var value: Int
 
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(title)
                 Spacer()
-                Text("\(value) / 10")
+                Text("\(value) / 5")
                     .monospacedDigit()
                     .bold()
                     .foregroundStyle(Color.forScore(Double(value)))
             }
-            Slider(
-                value: Binding(
-                    get: { Double(value) },
-                    set: { value = Int($0.rounded()) }
-                ),
-                in: 0...10,
-                step: 1
-            )
-            .tint(Color.forScore(Double(value)))
-            .accessibilityLabel(title)
-            .accessibilityValue("\(value) out of 10")
+            Picker(title, selection: $value) {
+                ForEach(SymptomScale.range, id: \.self) { score in
+                    Text("\(score)").tag(score)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
         }
+        .padding(.vertical, 2)
     }
 }
