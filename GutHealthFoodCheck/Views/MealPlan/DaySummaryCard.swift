@@ -14,7 +14,7 @@ struct DaySummaryCard: View {
             Divider()
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
                 GridRow {
-                    macro("Protein", eaten: summary.eaten.protein, target: summary.target.proteinMin, max: summary.target.proteinMax)
+                    macro("Protein", eaten: summary.eaten.protein, target: summary.target.proteinMin, upper: summary.target.proteinMax)
                     macro("Carbs", eaten: summary.eaten.carbs, target: summary.target.carbs)
                 }
                 GridRow {
@@ -51,22 +51,22 @@ struct DaySummaryCard: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func macro(_ title: String, eaten: Double, target: Double?, max: Double? = nil) -> some View {
+    private func macro(_ title: String, eaten: Double, target: Double?, upper: Double? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(Self.macroText(eaten: eaten, target: target, max: max))
+            Text(Self.macroText(eaten: eaten, target: target, upper: upper))
                 .font(.subheadline.bold())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// "eaten / target g", "eaten / min–max g" for a range, or "eaten g" without a target.
-    private static func macroText(eaten: Double, target: Double?, max: Double?) -> String {
+    private static func macroText(eaten: Double, target: Double?, upper: Double?) -> String {
         guard let target else { return "\(grams(eaten)) g" }
-        if let max {
-            return "\(grams(eaten)) / \(grams(target))–\(grams(max)) g"
+        if let upper {
+            return "\(grams(eaten)) / \(grams(target))–\(grams(upper)) g"
         }
         return "\(grams(eaten)) / \(grams(target)) g"
     }
@@ -85,7 +85,7 @@ struct DaySummaryCard: View {
     let eaten = Macros(kcal: 1250, protein: 82.5, carbs: 140, fat: 38, fibre: 12)
     let planned = Macros(kcal: 2100, protein: 140, carbs: 230, fat: 65, fibre: 28)
     let over = Macros(kcal: 2400, protein: 150, carbs: 260, fat: 80, fibre: 30)
-    return List {
+    List {
         DaySummaryCard(summary: DaySummary(target: target, eaten: eaten, planned: planned))
         DaySummaryCard(summary: DaySummary(target: target, eaten: over, planned: over))
     }

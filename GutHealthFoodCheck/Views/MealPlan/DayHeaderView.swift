@@ -57,9 +57,16 @@ struct DayHeaderView: View {
     }
 }
 
-#Preview {
-    @Previewable @State var date = Calendar.current.startOfDay(for: .now.addingTimeInterval(86_400 * 2))
-    List {
-        DayHeaderView(date: $date, training: "Gym: lower body")
+private struct DayHeaderPreview: View {
+    @State private var date = Calendar.current.startOfDay(for: .now.addingTimeInterval(86_400 * 2))
+
+    var body: some View {
+        List {
+            DayHeaderView(date: $date, training: "Gym: lower body")
+        }
     }
+}
+
+#Preview {
+    DayHeaderPreview()
 }
