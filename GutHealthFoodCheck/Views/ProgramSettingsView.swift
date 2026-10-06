@@ -12,11 +12,13 @@ struct ProgramSettingsView: View {
     @AppStorage(ReminderScheduler.hourKey) private var reminderHour = 20
     @AppStorage(ReminderScheduler.minuteKey) private var reminderMinute = 0
     @State private var notificationsDenied = false
+    @State private var showingImport = false
 
     var body: some View {
         NavigationStack {
             Form {
                 reminderSection
+                mealPlanSection
                 if let settings = settingsList.first {
                     ProgramFields(settings: settings)
                 }
@@ -32,6 +34,20 @@ struct ProgramSettingsView: View {
                 }
             }
             .task { await checkNotificationPermission() }
+            .sheet(isPresented: $showingImport) {
+                ImportPlanView()
+            }
+        }
+    }
+
+    private var mealPlanSection: some View {
+        Section("Meal plan") {
+            NavigationLink("Meal plan settings") {
+                MealPlanSettingsView(profile: .amel)
+            }
+            Button("Import plan") {
+                showingImport = true
+            }
         }
     }
 
