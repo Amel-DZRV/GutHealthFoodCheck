@@ -13,8 +13,10 @@ On first launch the app asks **Amel or Nina** and remembers the answer (Settings
 
 ## Meal plan
 
-Import `meal-plan.json` (format: `docs/meal-plan.json`) from the empty state or Settings → Meal plan →
-*Import plan*. Re-importing replaces plan data; shopping items you added yourself are kept.
+The plan ships inside the app (`Shared/MealPlan/Import/BundledMealPlan.swift`, a trimmed copy of
+`docs/meal-plan.json`) and loads itself the first time the app runs, so there is nothing to import.
+To load an updated JSON later, use Settings → Meal plan → *Import plan*: it replaces plan data, and
+shopping items you added yourself are kept.
 
 - **Day view**: pick any date, see the day's meals, tick meals as eaten, and watch *Left / Eaten / Total*
   kcal plus protein, carbs, fat and fibre against your targets. Amel's plan repeats weekly with the
