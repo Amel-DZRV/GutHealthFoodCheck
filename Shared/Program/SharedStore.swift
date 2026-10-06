@@ -11,6 +11,16 @@ enum SharedStore {
         DailyCheckIn.self,
         ReintroTest.self,
         ProgramSettings.self,
+        CatalogIngredient.self,
+        MealDefinition.self,
+        MealItem.self,
+        MealStep.self,
+        PlanEntry.self,
+        DayOverride.self,
+        MealCompletion.self,
+        PersonTargets.self,
+        MealPlanSettings.self,
+        ShoppingListItem.self,
     ])
 
     static func makeContainer() throws -> ModelContainer {
