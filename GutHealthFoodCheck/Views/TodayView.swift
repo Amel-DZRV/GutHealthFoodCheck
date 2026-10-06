@@ -6,11 +6,21 @@ struct TodayView: View {
     @Query private var settingsList: [ProgramSettings]
     @Query(sort: \DailyCheckIn.day) private var checkIns: [DailyCheckIn]
     @Query(sort: \ReintroTest.order) private var tests: [ReintroTest]
+    @Query private var planEntries: [PlanEntry]
+    @Query private var overrides: [DayOverride]
+    @Query private var allMeals: [MealDefinition]
+    @Query private var completions: [MealCompletion]
+    @Query private var allTargets: [PersonTargets]
+    @Query private var mealSettingsList: [MealPlanSettings]
     @Bindable private var router = AppRouter.shared
 
     @State private var editing: DailyCheckIn?
     @State private var showingSettings = false
+    @State private var showingShopping = false
     @State private var confirmingStart = false
+    @State private var date = Calendar.current.startOfDay(for: .now)
+
+    private let person = Profile.amel.rawValue
 
     var body: some View {
         NavigationStack {
@@ -21,7 +31,12 @@ struct TodayView: View {
             }
             .navigationTitle("Today")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button {
+                        showingShopping = true
+                    } label: {
+                        Label("Shopping list", systemImage: "cart")
+                    }
                     Button {
                         showingSettings = true
                     } label: {
@@ -29,8 +44,19 @@ struct TodayView: View {
                     }
                 }
             }
+            .navigationDestination(for: String.self) { key in
+                MealDetailView(
+                    mealKey: key,
+                    person: person,
+                    date: date,
+                    testAddition: testAddition(forMealKey: key)
+                )
+            }
             .sheet(isPresented: $showingSettings) {
                 ProgramSettingsView()
+            }
+            .sheet(isPresented: $showingShopping) {
+                ShoppingListView(profile: .amel)
             }
             .sheet(isPresented: $router.showCheckIn) {
                 CheckInView(existing: engine.checkIn(on: .now))
@@ -51,16 +77,154 @@ struct TodayView: View {
         ProgramEngine(settings: settingsList.first, checkIns: checkIns, tests: tests)
     }
 
+    /// Everything the meal plan shows for the selected day.
+    private struct MealDay {
+        let resolved: ResolvedDay
+        let meals: [MealDefinition]
+        let eatenKeys: Set<String>
+        let summary: DaySummary
+    }
+
+    private var isMealPlanImported: Bool {
+        mealSettingsList.first?.importedAt != nil
+    }
+
+    private func mealDay() -> MealDay {
+        let day = Calendar.current.startOfDay(for: date)
+        let resolved = MealResolver.resolve(
+            person: person,
+            date: day,
+            rotationStart: mealSettingsList.first?.rotationStart ?? day,
+            entries: planEntries.filter { $0.person == person }.map(\.snapshot),
+            overrides: overrides.filter { $0.person == person }.map(\.snapshot)
+        )
+        let meals = resolved.mealKeys.compactMap { key in allMeals.first { $0.key == key } }
+        let eatenKeys = Set(
+            completions
+                .filter { $0.person == person && Calendar.current.startOfDay(for: $0.date) == day }
+                .map(\.mealKey)
+        )
+        let target = allTargets.first { $0.person == person }?.snapshot
+            ?? TargetsSnapshot(kcal: 2250, proteinMin: 200, proteinMax: nil, carbs: nil, fat: nil, fibre: nil)
+        let summary = DaySummaryBuilder.build(
+            meals: meals.map { ($0.key, $0.macros) },
+            eatenKeys: eatenKeys,
+            target: target
+        )
+        return MealDay(resolved: resolved, meals: meals, eatenKeys: eatenKeys, summary: summary)
+    }
+
+    /// The test food added to lunch on the selected day, if any.
+    private func testAddition(forMealKey key: String) -> String? {
+        guard allMeals.first(where: { $0.key == key })?.slot == "lunch" else { return nil }
+        return lunchTestAddition()
+    }
+
+    private func lunchTestAddition() -> String? {
+        let engine = self.engine
+        let calendar = Calendar.current
+        let day = calendar.startOfDay(for: date)
+        let today = calendar.startOfDay(for: .now)
+        if day == today {
+            let phase = engine.phase(on: .now)
+            guard phase.isTesting, let test = phase.test else { return nil }
+            return "\(test.name) \(test.instruction)"
+        }
+        if day < today {
+            guard let checkIn = engine.checkIn(on: day), checkIn.kind == .test, let test = checkIn.test else { return nil }
+            return "\(test.name) \(test.instruction)"
+        }
+        return nil
+    }
+
+    private func toggleEaten(_ key: String) {
+        let day = Calendar.current.startOfDay(for: date)
+        if let existing = completions.first(where: {
+            $0.person == person && $0.mealKey == key && Calendar.current.startOfDay(for: $0.date) == day
+        }) {
+            context.delete(existing)
+        } else {
+            context.insert(MealCompletion(person: person, date: day, mealKey: key))
+        }
+        try? context.save()
+    }
+
+    @ViewBuilder
+    private func mealPlanSections(_ mealDay: MealDay, isToday: Bool) -> some View {
+        Section {
+            DayHeaderView(date: $date, training: mealDay.resolved.training)
+            DaySummaryCard(summary: mealDay.summary)
+        }
+
+        Section(isToday ? "Today's meals" : "Meals") {
+            if mealDay.meals.isEmpty {
+                Text("No meals planned for this day.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(mealDay.meals) { meal in
+                NavigationLink(value: meal.key) {
+                    MealRowView(
+                        title: MealSlot.title(meal.slot),
+                        name: meal.name,
+                        summary: meal.itemSummary,
+                        kcal: meal.macros.kcal,
+                        isEaten: mealDay.eatenKeys.contains(meal.key),
+                        testAddition: meal.slot == "lunch" ? lunchTestAddition() : nil,
+                        onToggle: { toggleEaten(meal.key) }
+                    )
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private func content(settings: ProgramSettings) -> some View {
         let engine = self.engine
         let phase = engine.phase(on: .now)
         let todaysCheckIn = engine.checkIn(on: .now)
+        let isToday = Calendar.current.isDateInToday(date)
+        let mealDay: MealDay? = isMealPlanImported ? self.mealDay() : nil
 
         Section {
             PhaseCard(phase: phase)
         }
 
+        if let mealDay {
+            mealPlanSections(mealDay, isToday: isToday)
+        }
+
+        if isToday {
+            checkInSection(todaysCheckIn: todaysCheckIn, phase: phase)
+        }
+
+        if mealDay == nil {
+            Section("Today's meals") {
+                MealRow(title: "Breakfast", text: settings.breakfast)
+                MealRow(title: "Lunch", text: settings.lunch, addition: phase.isTesting ? phase.test : nil)
+                MealRow(title: "Dinner", text: settings.dinner)
+            }
+        }
+
+        if isToday && settings.reintroStart == nil {
+            baselineSection(engine: engine)
+        }
+
+        if isToday && !checkIns.isEmpty {
+            Section("Recent days") {
+                ForEach(Array(checkIns.reversed().prefix(14))) { checkIn in
+                    Button {
+                        editing = checkIn
+                    } label: {
+                        CheckInRow(checkIn: checkIn, phase: engine.phase(for: checkIn), showsDate: true)
+                    }
+                    .foregroundStyle(.primary)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func checkInSection(todaysCheckIn: DailyCheckIn?, phase: ProgramPhase) -> some View {
         Section("Evening check-in") {
             if let todaysCheckIn {
                 Button {
@@ -75,29 +239,6 @@ struct TodayView: View {
                 } label: {
                     Label("Log today's bloating and gas", systemImage: "square.and.pencil")
                         .font(.headline)
-                }
-            }
-        }
-
-        Section("Today's meals") {
-            MealRow(title: "Breakfast", text: settings.breakfast)
-            MealRow(title: "Lunch", text: settings.lunch, addition: phase.isTesting ? phase.test : nil)
-            MealRow(title: "Dinner", text: settings.dinner)
-        }
-
-        if settings.reintroStart == nil {
-            baselineSection(engine: engine)
-        }
-
-        if !checkIns.isEmpty {
-            Section("Recent days") {
-                ForEach(Array(checkIns.reversed().prefix(14))) { checkIn in
-                    Button {
-                        editing = checkIn
-                    } label: {
-                        CheckInRow(checkIn: checkIn, phase: engine.phase(for: checkIn), showsDate: true)
-                    }
-                    .foregroundStyle(.primary)
                 }
             }
         }

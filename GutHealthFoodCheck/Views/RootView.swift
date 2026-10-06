@@ -9,7 +9,7 @@ struct RootView: View {
         case .amel:
             AmelTabs()
         case .nina:
-            Text("Nina home")
+            NinaHomeView()
         case nil:
             ProfilePickerView()
         }
