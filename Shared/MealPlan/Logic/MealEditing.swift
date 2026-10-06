@@ -13,7 +13,7 @@ enum MealEditing {
         let source = fetchMeal(key: key, context: context)
         if let source, !source.isTemplate { return source }
 
-        let override = ensureOverride(person: person, date: day, context: context)
+        let dayOverride = ensureOverride(person: person, date: day, context: context)
         let copyKey = "\(key)@\(dayKey)"
 
         // Re-editing the same day: reuse the copy made earlier.
@@ -59,7 +59,7 @@ enum MealEditing {
             }
         }
 
-        override.mealKeys = override.mealKeys.map { $0 == key ? copyKey : $0 }
+        dayOverride.mealKeys = dayOverride.mealKeys.map { $0 == key ? copyKey : $0 }
 
         for completion in completions(person: person, date: day, key: key, context: context) {
             completion.mealKey = copyKey
@@ -72,7 +72,7 @@ enum MealEditing {
     /// Adds a new empty custom meal to the day and returns it.
     static func addMeal(person: String, date: Date, slot: String, name: String, context: ModelContext) -> MealDefinition {
         let day = Calendar.current.startOfDay(for: date)
-        let override = ensureOverride(person: person, date: day, context: context)
+        let dayOverride = ensureOverride(person: person, date: day, context: context)
 
         let meal = MealDefinition(
             key: "custom-\(UUID().uuidString)@\(dayString(day))",
@@ -82,7 +82,7 @@ enum MealEditing {
             isTemplate: false
         )
         context.insert(meal)
-        override.mealKeys.append(meal.key)
+        dayOverride.mealKeys.append(meal.key)
 
         try? context.save()
         return meal
@@ -91,8 +91,8 @@ enum MealEditing {
     /// Removes a meal from this day only. Templates stay; copies and custom meals of the day are deleted.
     static func removeMeal(key: String, person: String, date: Date, context: ModelContext) {
         let day = Calendar.current.startOfDay(for: date)
-        let override = ensureOverride(person: person, date: day, context: context)
-        override.mealKeys.removeAll { $0 == key }
+        let dayOverride = ensureOverride(person: person, date: day, context: context)
+        dayOverride.mealKeys.removeAll { $0 == key }
 
         for completion in completions(person: person, date: day, key: key, context: context) {
             context.delete(completion)
@@ -145,8 +145,8 @@ enum MealEditing {
             overrides: overrides.filter { $0.person == person }.map(\.snapshot)
         )
 
-        let override = DayOverride(person: person, date: date, mealKeys: resolved.mealKeys)
-        context.insert(override)
-        return override
+        let dayOverride = DayOverride(person: person, date: date, mealKeys: resolved.mealKeys)
+        context.insert(dayOverride)
+        return dayOverride
     }
 }

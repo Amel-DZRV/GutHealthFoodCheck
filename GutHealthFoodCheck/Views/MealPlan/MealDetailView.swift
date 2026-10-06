@@ -58,8 +58,8 @@ struct MealDetailView: View {
             }
         }
         .navigationDestination(isPresented: $showEdit) {
-            if let meal = editingMeal ?? meal {
-                MealEditView(meal: meal)
+            if let target = editingMeal ?? meal {
+                MealEditView(meal: target)
             }
         }
     }

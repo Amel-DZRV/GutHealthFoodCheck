@@ -39,6 +39,9 @@ struct NinaHomeView: View {
                 }
             }
             .navigationTitle("Meals")
+            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+                date = Calendar.current.startOfDay(for: .now)
+            }
             .navigationDestination(for: String.self) { key in
                 MealDetailView(mealKey: key, person: Self.person, date: date)
             }

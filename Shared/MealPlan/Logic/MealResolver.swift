@@ -48,10 +48,10 @@ enum MealResolver {
             .sorted { $0.order < $1.order }
         let training = planned.first?.training ?? ""
 
-        if let override = overrides.first(where: {
+        if let dayOverride = overrides.first(where: {
             $0.person == person && calendar.startOfDay(for: $0.date) == day
         }) {
-            return ResolvedDay(date: day, mealKeys: override.mealKeys, training: training, isOverride: true)
+            return ResolvedDay(date: day, mealKeys: dayOverride.mealKeys, training: training, isOverride: true)
         }
         return ResolvedDay(date: day, mealKeys: planned.map(\.mealKey), training: training, isOverride: false)
     }
