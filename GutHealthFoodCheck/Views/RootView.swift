@@ -2,17 +2,21 @@ import SwiftData
 import SwiftUI
 
 struct RootView: View {
+    @Environment(\.modelContext) private var context
     @AppStorage(Profile.storageKey) private var profileRaw = ""
 
     var body: some View {
-        switch Profile(rawValue: profileRaw) {
-        case .amel:
-            AmelTabs()
-        case .nina:
-            NinaHomeView()
-        case nil:
-            ProfilePickerView()
+        Group {
+            switch Profile(rawValue: profileRaw) {
+            case .amel:
+                AmelTabs()
+            case .nina:
+                NinaHomeView()
+            case nil:
+                ProfilePickerView()
+            }
         }
+        .task { MealPlanSeeder.seedIfNeeded(context) }
     }
 }
 
