@@ -134,7 +134,7 @@ struct ShoppingListView: View {
                 let ra = ShoppingAisle.rank(a), rb = ShoppingAisle.rank(b)
                 return ra != rb ? ra < rb : a < b
             }
-            .map { aisle in
+            .map { aisle -> ShoppingAisleGroup in
                 let sorted = (byAisle[aisle] ?? []).sorted { a, b in
                     if a.isChecked != b.isChecked { return !a.isChecked }
                     return a.order < b.order
