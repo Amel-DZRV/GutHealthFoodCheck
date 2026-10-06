@@ -89,7 +89,7 @@ struct TodayView: View {
         mealSettingsList.first?.importedAt != nil
     }
 
-    private func mealDay() -> MealDay {
+    private func buildMealDay() -> MealDay {
         let day = Calendar.current.startOfDay(for: date)
         let resolved = MealResolver.resolve(
             person: person,
@@ -150,12 +150,7 @@ struct TodayView: View {
     }
 
     @ViewBuilder
-    private func mealPlanSections(_ mealDay: MealDay, isToday: Bool) -> some View {
-        Section {
-            DayHeaderView(date: $date, training: mealDay.resolved.training)
-            DaySummaryCard(summary: mealDay.summary)
-        }
-
+    private func mealsSection(_ mealDay: MealDay, isToday: Bool) -> some View {
         Section(isToday ? "Today's meals" : "Meals") {
             if mealDay.meals.isEmpty {
                 Text("No meals planned for this day.")
@@ -183,21 +178,26 @@ struct TodayView: View {
         let phase = engine.phase(on: .now)
         let todaysCheckIn = engine.checkIn(on: .now)
         let isToday = Calendar.current.isDateInToday(date)
-        let mealDay: MealDay? = isMealPlanImported ? self.mealDay() : nil
+        let mealDay: MealDay? = isMealPlanImported ? buildMealDay() : nil
 
         Section {
             PhaseCard(phase: phase)
         }
 
         if let mealDay {
-            mealPlanSections(mealDay, isToday: isToday)
+            Section {
+                DayHeaderView(date: $date, training: mealDay.resolved.training)
+                DaySummaryCard(summary: mealDay.summary)
+            }
         }
 
         if isToday {
             checkInSection(todaysCheckIn: todaysCheckIn, phase: phase)
         }
 
-        if mealDay == nil {
+        if let mealDay {
+            mealsSection(mealDay, isToday: isToday)
+        } else {
             Section("Today's meals") {
                 MealRow(title: "Breakfast", text: settings.breakfast)
                 MealRow(title: "Lunch", text: settings.lunch, addition: phase.isTesting ? phase.test : nil)
