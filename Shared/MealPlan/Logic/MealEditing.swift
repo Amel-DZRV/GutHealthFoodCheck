@@ -114,13 +114,13 @@ enum MealEditing {
     }
 
     private static func fetchMeal(key: String, context: ModelContext) -> MealDefinition? {
-        let descriptor = FetchDescriptor<MealDefinition>(predicate: #Predicate { $0.key == key })
+        let descriptor = FetchDescriptor<MealDefinition>(predicate: #Predicate<MealDefinition> { $0.key == key })
         return (try? context.fetch(descriptor))?.first
     }
 
     private static func completions(person: String, date: Date, key: String, context: ModelContext) -> [MealCompletion] {
         let descriptor = FetchDescriptor<MealCompletion>(
-            predicate: #Predicate { $0.person == person && $0.mealKey == key }
+            predicate: #Predicate<MealCompletion> { $0.person == person && $0.mealKey == key }
         )
         let all = (try? context.fetch(descriptor)) ?? []
         return all.filter { Calendar.current.startOfDay(for: $0.date) == date }
