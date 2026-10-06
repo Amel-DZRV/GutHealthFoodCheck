@@ -2,6 +2,22 @@ import SwiftData
 import SwiftUI
 
 struct RootView: View {
+    @AppStorage(Profile.storageKey) private var profileRaw = ""
+
+    var body: some View {
+        switch Profile(rawValue: profileRaw) {
+        case .amel:
+            AmelTabs()
+        case .nina:
+            Text("Nina home")
+        case nil:
+            ProfilePickerView()
+        }
+    }
+}
+
+/// Amel's gut program tabs. Seeding, reminders and deep links live here so Nina never triggers them.
+private struct AmelTabs: View {
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
     @Bindable private var router = AppRouter.shared
