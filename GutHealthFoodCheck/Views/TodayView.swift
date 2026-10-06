@@ -30,6 +30,9 @@ struct TodayView: View {
                 }
             }
             .navigationTitle("Today")
+            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+                date = Calendar.current.startOfDay(for: .now)
+            }
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button {
@@ -177,8 +180,9 @@ struct TodayView: View {
         let engine = self.engine
         let phase = engine.phase(on: .now)
         let todaysCheckIn = engine.checkIn(on: .now)
-        let isToday = Calendar.current.isDateInToday(date)
         let mealDay: MealDay? = isMealPlanImported ? buildMealDay() : nil
+        // Without the meal plan there is no day picker, so the screen is always today.
+        let isToday = mealDay == nil || Calendar.current.isDateInToday(date)
 
         Section {
             PhaseCard(phase: phase)
